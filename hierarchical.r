@@ -17,32 +17,69 @@ get_centroid <- function(l) {
   return(v)
 }
 
-cluster <- function(data,clusters) {
-  reduced_set <- unique(clusters)
-  min_val = squared_euclidean_distance(data[[1]],data[[2]])
-  min_i = 1
-  min_j = 2
-  min_val_i = reduced_set[[1]]
-  min_val_j = reduced_set[[2]]
-  for(i in 1:length(data)) {
-    for(j in i:length(data)) {
-      if( i != j) {
-          distance = squared_euclidean_distance(data[[i]],data[[j]])
-          if(distance <= min_val) {
-            min_val = distance
-            min_i = i
-            min_j = j
-            min_val_i = reduced_set[[i]]
-            min_val_j = reduced_set[[j]]
-          }
-      }
-    }
-  }
+merge_clusters <- function(clusters,min_i,val_i,val_j) {
   for(i in 1:length(clusters)) {
-    if(clusters[[i]] == min_val_i || clusters[[i]] == min_val_j) {
+    if(clusters[[i]] == val_i || clusters[[i]] == val_j) {
       clusters[[i]] <- min_i   
     }
   }
+}
+
+cluster_centroids <- function(data,clusters) {
+  reduced_set <- unique(clusters)
+  min_val = squared_euclidean_distance(data[[1]],data[[2]])
+  min_i = 1
+  min_val_i = reduced_set[[1]]
+  min_val_j = reduced_set[[2]]
+  for(i in 1:length(data)) {
+    for(j in (i+1):length(data)) {
+      distance = squared_euclidean_distance(data[[i]],data[[j]])
+      if(distance < min_val) {
+        min_val = distance
+        min_i = i
+        min_val_i = reduced_set[[i]]
+        min_val_j = reduced_set[[j]]
+      }
+    }
+  }
+  
+  clusters <- merge_clusters(clusters,min_i,min_val_i,min_val_j)
+  return(clusters)
+}
+
+get_min_distance <- function(c1,c2) {
+  distance = squared_euclidean_distance(c1[[1]],c2[[2]])
+  for(i in 1:length(c1)) {
+    for(j in 1:length(c2)) {
+      distance = squared_euclidean_distance(c1[[i]],c2[[j]])
+      if(distance <= min_val) {
+        min_val = distance
+      }
+    }
+  }
+  return(min_val)
+}
+
+cluster_min <- function(data,clusters) {
+  reduced_set <- unique(clusters)
+  min_i = 1
+  min_val_i = reduced_set[[1]]
+  min_val_j = reduced_set[[2]]
+  min_val <- 9999999999999999999
+  for(i in 1:length(reduced_set)) {
+    for(j in i:length(reduced_set)) {
+      c1 <- data[clusters == i,]
+      c2 <- data[clusters == j,]
+      distance <- get_min_distance(c1,c2)
+      if(distance < min_val) {
+        min_val = distance
+        min_i = i
+        min_val_i = reduced_set[[i]]
+        min_val_j = reduced_set[[j]]
+      }
+    }
+  }
+  clusters <- merge_clusters(clusters,min_i,min_val_i,min_val_j)
   return(clusters)
 }
 
@@ -54,12 +91,13 @@ for(i in 1:45) {
 }
 #clusters <- cluster(mat,clusters)
 while(length(unique(clusters)) > 1) {
-  mat <- list()
+  # mat <- list()
   val <- unique(clusters)
-  for(i in 1:length(val)) {
-    mat[[i]] <- get_centroid(data[clusters == val[i],])
-  }
+  # for(i in 1:length(val)) {
+  #   mat[[i]] <- get_centroid(data[clusters == val[i],])
+  # }
   print(length(val))
-  clusters <- cluster(mat,clusters)
+  # clusters <- cluster_centroids(mat,clusters)
+  clusters <- cluster_min(data,clusters)
 }
 
